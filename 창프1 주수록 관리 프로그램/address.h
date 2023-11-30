@@ -22,6 +22,7 @@
 #define MAX_Y 20
 
 
+
 //날짜 정보를 저장할 구조체
 typedef struct {
 	char date[STRING_SIZE];
@@ -47,10 +48,27 @@ typedef struct _AddressBook {
 	int contactCount;
 } AddressBook;
 
+// 검색 결과를 저장하는 구조체 배열
+typedef struct {
+	Person relcon[MAX];
+	int contactCount;
+} SearchResult;
+
+typedef struct {
+	Person initials[MAX];
+	int contactCount;
+}Searchinitials;
+
+typedef struct {
+	Person Favorite[MAX];
+	int contactCount;
+}SearchFavorite;
+
 //char nameToDelete[STRING_SIZE];
-
 AddressBook addressBook;
-
+SearchResult searchResult;
+Searchinitials initials;
+SearchFavorite searchFavorite;
 
 //FILE* openFile(const char* fileName, const char* mode);
 //파일 열기
@@ -64,10 +82,11 @@ void gotoxy(int x, int y);
 void printMenu();
 void draw_square();
 void modifyContact(AddressBook* addressBook);
-void searchRelation(AddressBook* addressBook, const char* filename);
+void searchRelation(AddressBook* addressBook, const char* filename, SearchResult* searchResult);
 void birthdayalarm(AddressBook* addressBook);
-void searchinitials(AddressBook* addressBook);
 void initialize(AddressBook* addressBook);
+void searchinitials(AddressBook* addressBook, Searchinitials* initials);
+void searchfavorite(AddressBook* addressBook, SearchFavorite* searchFavorite);
 
 //즐겨찾기 함수
 void addFavorite(AddressBook* addressBook);
@@ -81,6 +100,8 @@ void draw_sq(int x, int y);
 void draw_square2(int x, int y, int width, int height);
 void draw_square3();
 void draw_square4(int x, int y, int width, int height);
-void nextredraw();
+void nextredraw(int leftSelected, int rightSelected);
 void textcolor(int colorNum);
 int nextPagedraw();
+void draw_square5(int x, int y, int width, int height, int selected);
+

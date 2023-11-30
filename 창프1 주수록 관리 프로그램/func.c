@@ -2,7 +2,6 @@
 #define X 30
 #define Y 4
 
-
 //파일에 저장하기(파일의 끝에 연락처 정보 추가)
 void saveAddressBookToFile(AddressBook* addressBook, const char* filename) {
     //FILE* openFile(filename, a);
@@ -87,10 +86,6 @@ void loadAddressBookFromFile(AddressBook* addressBook, const char* filename) {
     fclose(file);
 }
 
-
-
-
-
 void addContact(AddressBook* addressBook) {
     if (addressBook->contactCount >= MAX) {
         printf("더 이상 연락처를 추가할 수 없습니다.\n");
@@ -148,7 +143,7 @@ void addContact(AddressBook* addressBook) {
     // 새로운 연락처를 주소록에 추가
     addressBook->contactCount++;
     system("cls");
-    draw_square2(20, 0, 56, 30);
+    draw_square4(47, 15, 50, 30);
     gotoxy(x+10, y + 4);
     printf("추가완료!\n");
 
@@ -156,66 +151,98 @@ void addContact(AddressBook* addressBook) {
 }
 
 
-//
-//연락처 조회기능
-// 주소록 조회기능(주소록에 저장된 정보를 출력하고 등록된 날짜도 함께 출력)
+
 void displayContacts(AddressBook* addressBook, const char* filename) {
+    loadAddressBookFromFile(addressBook, "address.txt");
     int x = 6;
     int y = 1;
-    int choice=0;
+    int choice = 0;
+    int leftselect = 0;
+    int rightselect = 1;
+
+    int currentPage = 0;
+    int contactsPerPage = 4;
+    int totalPages = (addressBook->contactCount + contactsPerPage - 1) / contactsPerPage;
+
+    
+
+    // 처음 호출 시 첫 번째 페이지의 연락처 정보를 출력
+    draw_square4(38, 15, 70, 30);
+    nextredraw(leftselect, rightselect);
+    gotoxy(34, 27);
+    printf(" %d / %d\n", currentPage + 1, totalPages);
 
     do {
-        choice = nextPagedraw();
+        system("cls");
         draw_square4(38, 15, 70, 30);
+        nextredraw(leftselect, rightselect);
+        gotoxy(34, 27);
+        printf(" %d / %d\n", currentPage + 1, totalPages);
+
+        // 연락처 정보 출력
+        int startIndex = currentPage * contactsPerPage;
+        int endIndex = startIndex + contactsPerPage;
+        
+        // 현재 페이지에서 출력을 시작할 때마다 y 초기화
+        y = 1;
+
+        for (int i = startIndex; i < endIndex && i < addressBook->contactCount; ++i) {
+            gotoxy(x, y);
+            printf("이름: %s", addressBook->contacts[i].name);
+            if (addressBook->contacts[i].Favorite == 1) {
+                printf(" ★"); // 즐겨찾기이면 ★을 출력
+            }
+
+            y += 1;
+            gotoxy(x, y);
+            printf("전화번호: %s", addressBook->contacts[i].number);
+            y += 1;
+            gotoxy(x, y);
+            printf("주소: %s", addressBook->contacts[i].address);
+            y += 1;
+            gotoxy(x, y);
+            printf("생일: %s", addressBook->contacts[i].birthday);
+            y += 1;
+            gotoxy(x, y);
+            printf("관계: %s", addressBook->contacts[i].relationship);
+            y += 1;
+            gotoxy(x, y);
+            printf("등록 날짜: %s\n\n", addressBook->contacts[i].addedDate.date);
+            y += 2;
+        }
+        birthdayalarm(addressBook);
+        choice = nextPagedraw();
+        
         // 여기서 nextPagedraw가 반환한 값을 기반으로 다음 처리를 수행
         if (choice == 60) {
+            leftselect = 1;
+            rightselect = 0;
+            currentPage--;
+            if (currentPage < 0) {
+                currentPage = 0;
+            }
             // '<' 버튼을 선택한 경우에 대한 처리
             // 현재 페이지를 감소시키거나 이전 페이지의 정보를 출력하는 등의 동작
         }
         else if (choice == 67) {
-            // '>' 버튼을 선택한 경우에 대한 처리
-            // 현재 페이지를 증가시키거나 다음 페이지의 정보를 출력하는 등의 동작
+            leftselect = 0;
+            rightselect = 1;
+            currentPage++;
+            if (currentPage >= totalPages) {
+                currentPage = totalPages - 1;
+            }
         }
 
-        // 현재 페이지의 연락처 출력
-        draw_square4(38, 15, 70, 30);
-        // ... (이하 연락처 출력 코드 유지)
+        
+        if (choice == 27)
+        {
+            printMenu();
+            break;
+
+        }
     } while (1);
 
-    
-
-    for (int i = 0; i < addressBook->contactCount; i++) {
-        gotoxy(x, y);
-        printf("이름: %s", addressBook->contacts[i].name);
-        if (addressBook->contacts[i].Favorite == 1) {
-
-            printf(" ★"); // 즐겨찾기이면 ★을 출력
-        }
-        
-        y += 1;
-        gotoxy(x, y);
-        printf("전화번호: %s", addressBook->contacts[i].number);
-        y += 1;
-        gotoxy(x, y);
-        printf("주소: %s", addressBook->contacts[i].address);
-        y += 1;
-        gotoxy(x, y);
-        printf("생일: %s", addressBook->contacts[i].birthday);
-        y += 1;
-        gotoxy(x, y);
-        printf("관계: %s", addressBook->contacts[i].relationship);
-        y += 1;
-        gotoxy(x, y);
-        printf("등록 날짜: %s\n\n", addressBook->contacts[i].addedDate.date);
-        y += 2;
-        gotoxy(x, y);
-
-        
-
-    }
-
 }
-
 
 //삭제함수
 void deleteContactByName(AddressBook* addressBook) {
@@ -226,12 +253,13 @@ void deleteContactByName(AddressBook* addressBook) {
 
     // 사용자로부터 삭제할 연락처의 이름 입력 받기
     printf("삭제할 연락처의 이름을 입력하세요: ");
+    gotoxy(X + 6, Y + 2);
     fgets(nameToDelete, STRING_SIZE, stdin);
     nameToDelete[strcspn(nameToDelete, "\n")] = '\0';  // 개행 문자 제거
-
+    rewind(stdin);
     loadAddressBookFromFile(addressBook, "address.txt");
-    gotoxy(X, Y + 2);
-
+    gotoxy(X, Y + 3);
+   
     for (int i = 0; i < addressBook->contactCount; i++) {
         if (strcmp(addressBook->contacts[i].name, nameToDelete) == 0) {
             // 연락처를 찾았으므로 해당 연락처를 제거하고 배열을 감소시킴
@@ -242,6 +270,7 @@ void deleteContactByName(AddressBook* addressBook) {
             found = 1;  // 연락처를 찾았음을 표시
             printf("연락처가 삭제되었습니다.\n");
             saveAddressBookToFileW(addressBook, "address.txt");  // 수정된 주소록을 파일에 저장
+            
             return;  // 삭제 후 종료
         }
     }
@@ -295,7 +324,6 @@ void modifyContact(AddressBook* addressBook) {
             gotoxy(x, y + 10);
             printf("6. 즐겨찾기 \n");
 
-            //getchar();
             gotoxy(x, y + 12);
 
             //키보드 방향키 입력
@@ -378,20 +406,41 @@ void modifyContact(AddressBook* addressBook) {
     }
     if (found == 0)
     {
+        gotoxy(x-3, y);
         printf("이름을 찾지 못했습니다.");
     }
 }
+/*
+관계 검색(부분 문자열 검색 O)
+*/
 
-//관계 검색(부분 문자열 검색 O)
-void searchRelation(AddressBook* addressBook, const char* filename)
+void searchRelation(AddressBook* addressBook, const char* filename, SearchResult* searchResult)
 {
+    //searchResult->contactCount = 0;
+    int x1 = 6;
+    int y1 = 1;
+    int choice = 0;
+    int leftselect = 0;
+    int rightselect = 1;
+
+    int currentPage = 0;
+    int contactsPerPage = 4;
+
+
+    int x = 40;
+    int y = 8;
     //파일정보 불러오기
     loadAddressBookFromFile(addressBook, "address.txt");
 
+    draw_square4(47, 15, 50, 30);
+    gotoxy(x-6, y);
+
+
     printf("검색할 관계를 입력해주세요: ");
     char relationship[128];
-
+    gotoxy(x - 2, y + 1);
     fgets(relationship, sizeof(relationship), stdin);
+    int count = 0;
 
     int found = 0;
 
@@ -405,29 +454,122 @@ void searchRelation(AddressBook* addressBook, const char* filename)
     {
         if (strstr(addressBook->contacts[i].relationship, relationship) != NULL)
         {
-            printf("이름: %s\n", addressBook->contacts[i].name);
-            printf("전화번호: %s\n", addressBook->contacts[i].number);
-            printf("주소: %s\n", addressBook->contacts[i].address);
-            printf("생일: %s\n", addressBook->contacts[i].birthday);
-            printf("관계: %s\n", addressBook->contacts[i].relationship);
-            printf("등록 날짜: %s\n", addressBook->contacts[i].addedDate.date);
-            printf("\n");
-            
-            found = 1;
+            strcpy(searchResult->relcon[count].name, addressBook->contacts[i].name);
+            strcpy(searchResult->relcon[count].number, addressBook->contacts[i].number);
+            strcpy(searchResult->relcon[count].address, addressBook->contacts[i].address);
+            strcpy(searchResult->relcon[count].birthday, addressBook->contacts[i].birthday);
+            strcpy(searchResult->relcon[count].relationship, addressBook->contacts[i].relationship);
+            strcpy(searchResult->relcon[count].addedDate.date, addressBook->contacts[i].addedDate.date);
+            searchResult->relcon[count].Favorite = addressBook->contacts[i].Favorite;
+                count++;
+                searchResult->contactCount++;
+                found = 1;
         }
-
     }
+
+    //searchResult->contactCount = count; // 검색 결과의 연락처 수 업데이트
     if (found == 0)
     {
-        
+        gotoxy(x - 6, y + 3);
         printf("그런 관계인 사람이 없습니다.");
     }
+    int totalPages = (searchResult->contactCount + contactsPerPage - 1) / contactsPerPage;
+    system("cls");
+    draw_square4(38, 15, 70, 30);
+    nextredraw(leftselect, rightselect);
+    gotoxy(34, 27);
+    printf(" %d / %d\n", currentPage + 1, totalPages);
+
+    // 연락처 정보 출력
+    int startIndex = currentPage * contactsPerPage;
+    int endIndex = startIndex + contactsPerPage;
+
+    do {
+        system("cls");
+        draw_square4(38, 15, 70, 30);
+        nextredraw(leftselect, rightselect);
+        gotoxy(34, 27);
+        printf(" %d / %d\n", currentPage + 1, totalPages);
+
+        // 연락처 정보 출력
+        int startIndex = currentPage * contactsPerPage;
+        int endIndex = startIndex + contactsPerPage;
+
+        // 현재 페이지에서 출력을 시작할 때마다 y 초기화
+        y1 = 1;
+
+        for (int i = startIndex; i < endIndex && i < searchResult->contactCount; ++i) {
+            gotoxy(x1, y1);
+            printf("이름: %s", searchResult->relcon[i].name);
+            if (searchResult->relcon[i].Favorite == 1) {
+                printf(" ★"); // 즐겨찾기이면 ★을 출력
+            }
+
+            y1 += 1;
+            gotoxy(x1, y1);
+            printf("전화번호: %s", searchResult->relcon[i].number);
+            y1 += 1;
+            gotoxy(x1, y1);
+            printf("주소: %s", searchResult->relcon[i].address);
+            y1 += 1;
+            gotoxy(x1, y1);
+            printf("생일: %s", searchResult->relcon[i].birthday);
+            y1 += 1;
+            gotoxy(x1, y1);
+            printf("관계: %s", searchResult->relcon[i].relationship);
+            y1 += 1;
+            gotoxy(x1, y1);
+            printf("등록 날짜: %s\n\n", searchResult->relcon[i].addedDate.date);
+            y1 += 2;
+        }
+        birthdayalarm(addressBook);
+        choice = nextPagedraw();
+
+        // 여기서 nextPagedraw가 반환한 값을 기반으로 다음 처리를 수행
+        if (choice == 60) {
+            leftselect = 1;
+            rightselect = 0;
+            currentPage--;
+            if (currentPage < 0) {
+                currentPage = 0;
+            }
+            // '<' 버튼을 선택한 경우에 대한 처리
+            // 현재 페이지를 감소시키거나 이전 페이지의 정보를 출력하는 등의 동작
+        }
+        else if (choice == 67) {
+            leftselect = 0;
+            rightselect = 1;
+            currentPage++;
+            if (currentPage >= totalPages) {
+                currentPage = totalPages - 1;
+            }
+        }
+
+
+        if (choice == 27)
+        {
+            
+            printMenu();
+            break;
+
+        }
+    } while (1);
+    
 
 }
+
+
+
+
+
+
+
+
+
 // 생일 알림 기능
 void birthdayalarm(AddressBook* addressBook)
 {
-    loadAddressBookFromFile(addressBook, "address.txt");
+    //loadAddressBookFromFile(addressBook, "address.txt");
     draw_square4(95, 15, 40, 30);
     char today[128];
     time_t currentTime;
@@ -471,9 +613,6 @@ void birthdayalarm(AddressBook* addressBook)
     }
 }
 
-//즐겨찾기 기능
-
-
 
 // s   : 초성을 구할 문자열
 // cho: 초성을 담을 공간
@@ -481,20 +620,14 @@ void birthdayalarm(AddressBook* addressBook)
 // 반환값: 초성 개수
 //초성 분리 기능
 int getinitials(const char* s, char* cho, int size)
-
 {
-
     int i, j;
-
     int cnt, cho_index;
-
     char han[3] = { 0, };
 
     static char* cho_list[] = { "", //index: 1(ㄱ)~14(ㅎ)
 
          "ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ" };
-
-
 
     for (i = j = cnt = 0; s[i] && i < size; i++) {
 
@@ -509,7 +642,7 @@ int getinitials(const char* s, char* cho, int size)
             if (strcmp("가", han) <= 0 && strcmp("나", han) > 0)
 
                 cho_index = 1;                               // ㄱ
-
+            
             else if (strcmp("다", han) > 0) cho_index = 2;  // ㄴ
 
             else if (strcmp("라", han) > 0) cho_index = 3;  // ㄷ
@@ -536,8 +669,6 @@ int getinitials(const char* s, char* cho, int size)
 
             else cho_index = 14;                          // ㅎ
 
-
-
             cho[j++] = cho_list[cho_index][0];        // 초성 상위 바이트 저장
 
             cho[j++] = cho_list[cho_index][1];        // 초성 하위 바이트 저장
@@ -555,17 +686,29 @@ int getinitials(const char* s, char* cho, int size)
 }
 
 // 연락처 검색 함수 (초성 또는 전체 이름 검색)
-void searchinitials(AddressBook* addressBook) {
-    
+void searchinitials(AddressBook* addressBook, Searchinitials* initials)
+{
+    int x = 30;
+    int y = 8;
     loadAddressBookFromFile(addressBook, "address.txt");
+    int x1 = 6;
+    int y1 = 1;
+    int choice = 0;
+    int leftselect = 0;
+    int rightselect = 1;
+    int currentPage = 0;
+    int contactsPerPage = 4;
 
     char search_initials[128];
     int found = 0;  // 연락처를 찾았는지 여부를 나타내는 플래그
-
+    //실행창
+    draw_square4(47, 15, 50, 30);
+    gotoxy(x - 3, y);
     printf("검색할 초성 또는 전체 이름을 입력하세요: ");
+    gotoxy(x+8, y + 2);
     fgets(search_initials, sizeof(search_initials), stdin);
     search_initials[strcspn(search_initials, "\n")] = '\0';  // 개행 문자 제거
-
+    int j = 0;
     for (int i = 0; i < addressBook->contactCount; i++) {
         char contactInitials[128];
         // 연락처 이름의 초성을 추출하고 저장
@@ -573,23 +716,101 @@ void searchinitials(AddressBook* addressBook) {
 
         // 검색한 초성 또는 전체 이름이 연락처의 초성 또는 전체 이름에 포함되는 경우를 확인
         if (strstr(contactInitials, search_initials) != NULL || strstr(addressBook->contacts[i].name, search_initials) != NULL) {
-            printf("이름: %s\n", addressBook->contacts[i].name);
-            printf("전화번호: %s\n", addressBook->contacts[i].number);
-            printf("주소: %s\n", addressBook->contacts[i].address);
-            printf("생일: %s\n", addressBook->contacts[i].birthday);
-            printf("관계: %s\n", addressBook->contacts[i].relationship);
-            printf("등록 날짜: %s\n", addressBook->contacts[i].addedDate.date);
-            printf("\n");
+           
+            strcpy(initials->initials[j].name, addressBook->contacts[i].name);
+            strcpy(initials->initials[j].number, addressBook->contacts[i].number);
+            strcpy(initials->initials[j].address, addressBook->contacts[i].address);
+            strcpy(initials->initials[j].birthday, addressBook->contacts[i].birthday);
+            strcpy(initials->initials[j].relationship, addressBook->contacts[i].relationship);
+            strcpy(initials->initials[j].addedDate.date, addressBook->contacts[i].addedDate.date);
+            initials->initials[j].Favorite = addressBook->contacts[i].Favorite;
+            j++;
+            initials->contactCount++;
             found = 1;  // 연락처를 찾았음을 표시
         }
     }
-
-    if (!found) {
-        printf("일치하는 연락처를 찾을 수 없습니다.\n");
+    if (found == 0)
+    {
+        gotoxy(x - 6, y + 3);
+        printf("그런 관계인 사람이 없습니다.");
+        //getchar();
     }
-}
+    int totalPages = (initials->contactCount + contactsPerPage - 1) / contactsPerPage;
+    if (found == 1)
+    { 
+        do {
+            system("cls");
+            draw_square4(38, 15, 70, 30);
+            nextredraw(leftselect, rightselect);
+            gotoxy(34, 27);
+            printf(" %d / %d\n", currentPage + 1, totalPages);
 
-//추가해야 될 기능들
+            // 연락처 정보 출력
+            int startIndex = currentPage * contactsPerPage;
+            int endIndex = startIndex + contactsPerPage;
+
+            // 현재 페이지에서 출력을 시작할 때마다 y 초기화
+            y1 = 1;
+
+            for (int i = startIndex; i < endIndex && i < initials->contactCount; ++i) {
+                gotoxy(x1, y1);
+                printf("이름: %s", initials->initials[i].name);
+                if (initials->initials[i].Favorite == 1) {
+                    printf(" ★"); // 즐겨찾기이면 ★을 출력
+                }
+
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("전화번호: %s", initials->initials[i].number);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("주소: %s", initials->initials[i].address);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("생일: %s", initials->initials[i].birthday);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("관계: %s", initials->initials[i].relationship);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("등록 날짜: %s\n\n", initials->initials[i].addedDate.date);
+                y1 += 2;
+            }
+            birthdayalarm(addressBook);
+            choice = nextPagedraw();
+
+            // 여기서 nextPagedraw가 반환한 값을 기반으로 다음 처리를 수행
+            if (choice == 60) {
+                leftselect = 1;
+                rightselect = 0;
+                currentPage--;
+                if (currentPage < 0) {
+                    currentPage = 0;
+                }
+                // '<' 버튼을 선택한 경우에 대한 처리
+                // 현재 페이지를 감소시키거나 이전 페이지의 정보를 출력하는 등의 동작
+            }
+            else if (choice == 67) {
+                leftselect = 0;
+                rightselect = 1;
+                currentPage++;
+                if (currentPage >= totalPages) {
+                    currentPage = totalPages - 1;
+                }
+            }
+
+
+            if (choice == 27)
+            {
+
+                printMenu();
+                break;
+
+            }
+        } while (1);
+    }
+    
+}
 
 //즐겨찾기 추가
 void addFavorite(AddressBook* addressBook)
@@ -602,7 +823,7 @@ void addFavorite(AddressBook* addressBook)
     gotoxy(X-2, Y+2);
     printf("입력 >> ");
     scanf("%s", &name);
-
+    //rewind(stdin);
     int found = 0;
 
     for (int i = 0; i < addressBook->contactCount; i++ )
@@ -614,7 +835,7 @@ void addFavorite(AddressBook* addressBook)
             break;
         }
     }
-    if (found)
+    if (found==1)
     {
         gotoxy(X, Y + 4);
         printf("즐겨찾기가 추가되었습니다.");
@@ -625,6 +846,7 @@ void addFavorite(AddressBook* addressBook)
         gotoxy(X, Y + 4);
         printf("해당하는 이름이 없습니다.\n");
     }
+    getchar();
 }
 
 //즐겨찾기 삭제
@@ -643,7 +865,6 @@ void deleteFavorite(AddressBook* addressBook)
         if (strcmp(addressBook->contacts[i].name, name) == 0) {
             found = 1;
             addressBook->contacts[i].Favorite = 0;
-            
             break;
         }
     }
@@ -652,63 +873,128 @@ void deleteFavorite(AddressBook* addressBook)
         gotoxy(X - 2, Y + 4);
         printf("연락처의 즐겨찾기 표시가 제거되었습니다.\n");
         saveAddressBookToFileW(addressBook, "address.txt");
-        
     }
     else {
         gotoxy(X - 2, Y + 4);
         printf("해당 이름의 연락처를 찾을 수 없습니다.\n");
     }
+    getchar();
 }
-
-//관계 정렬
-void swap(Person* a, Person* b) {
-    Person temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-int partition(Person contacts[], int low, int high)
-{
-    char pivot[STRING_SIZE];
-    strcpy(pivot, contacts[high].relationship);
-    int i = (low - 1);
-
-    for (int j = low; j <= high - 1; j++)
-    {
-        if (strcmp(contacts[j].relationship, pivot) < 0)
-        {
-            i++;
-            swap(&contacts[i], &contacts[j]);
-        }
-    }
-    swap(&contacts[i + 1], &contacts[high]);
-    return (i + 1);
-}
-
-void quickSort(Person contacts[], int low, int high)
-{
-    if (low < high)
-    {
-        int pi = partition(contacts, low, high);
-        quickSort(contacts, low, pi - 1);
-        quickSort(contacts, pi + 1, high);
-    }
-}
-
-//이름 정렬
-
 
 //구조체 초기화 함수
 void initialize(AddressBook* addressBook) {
     addressBook->contactCount = 0;
 }
 
-//이름 중복 확인
-void check_name(AddressBook* addressBook)
+void searchfavorite(AddressBook* addressBook, SearchFavorite* searchFavorite)
 {
-    loadAddressBookFromFile(&addressBook, "address.txt");
-    
-    
+    int x1 = 6;
+    int y1 = 1;
+    loadAddressBookFromFile(addressBook, "address.txt");
+    int x = 6;
+    int y = 1;
+    int choice = 0;
+    int leftselect = 0;
+    int rightselect = 1;
+    int currentPage = 0;
+    int contactsPerPage = 4;
 
+    int j = 0;
+
+    // 처음 호출 시 첫 번째 페이지의 연락처 정보를 출력
+
+    for (int i = 0; i < addressBook->contactCount; i++)
+    {
+        if (addressBook->contacts[i].Favorite == 1)
+        {
+            strcpy(searchFavorite->Favorite[j].name, addressBook->contacts[i].name);
+            strcpy(searchFavorite->Favorite[j].address, addressBook->contacts[i].address);
+            strcpy(searchFavorite->Favorite[j].address, addressBook->contacts[i].address);
+            strcpy(searchFavorite->Favorite[j].birthday, addressBook->contacts[i].birthday);
+            strcpy(searchFavorite->Favorite[j].relationship, addressBook->contacts[i].relationship);
+            strcpy(searchFavorite->Favorite[j].addedDate.date, addressBook->contacts[i].addedDate.date);
+            searchFavorite->Favorite[j].Favorite = 1;
+            j++;
+            searchFavorite->contactCount++;
+        }
+    }
+    int totalPages = (searchFavorite->contactCount + contactsPerPage - 1) / contactsPerPage;
+    draw_square4(38, 15, 70, 30);
+    nextredraw(leftselect, rightselect);
+    gotoxy(34, 27);
+    printf(" %d / %d\n", currentPage + 1, totalPages);
+
+    do {
+        system("cls");
+        draw_square4(38, 15, 70, 30);
+        nextredraw(leftselect, rightselect);
+        gotoxy(34, 27);
+        printf(" %d / %d\n", currentPage + 1, totalPages);
+
+        // 연락처 정보 출력
+        int startIndex = currentPage * contactsPerPage;
+        int endIndex = startIndex + contactsPerPage;
+
+        // 현재 페이지에서 출력을 시작할 때마다 y 초기화
+        y1 = 1;
+
+        for (int i = startIndex; i < endIndex && i < searchFavorite->contactCount; ++i) {
+            if (searchFavorite->Favorite[i].Favorite == 1)
+            {
+                gotoxy(x1, y1);
+                printf("이름: %s", searchFavorite->Favorite[i].name);
+                if (searchFavorite->Favorite[i].Favorite == 1) {
+                    printf(" ★"); // 즐겨찾기이면 ★을 출력
+                }
+
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("전화번호: %s", searchFavorite->Favorite[i].number);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("주소: %s", searchFavorite->Favorite[i].address);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("생일: %s", searchFavorite->Favorite[i].birthday);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("관계: %s", searchFavorite->Favorite[i].relationship);
+                y1 += 1;
+                gotoxy(x1, y1);
+                printf("등록 날짜: %s\n\n", searchFavorite->Favorite[i].addedDate.date);
+                y1 += 2;
+            }
+        }
+     
+        birthdayalarm(addressBook);
+        choice = nextPagedraw();
+
+        // 여기서 nextPagedraw가 반환한 값을 기반으로 다음 처리를 수행
+        if (choice == 60) {
+            leftselect = 1;
+            rightselect = 0;
+            currentPage--;
+            if (currentPage < 0) {
+                currentPage = 0;
+            }
+            // '<' 버튼을 선택한 경우에 대한 처리
+            // 현재 페이지를 감소시키거나 이전 페이지의 정보를 출력하는 등의 동작
+        }
+        else if (choice == 67) {
+            leftselect = 0;
+            rightselect = 1;
+            currentPage++;
+            if (currentPage >= totalPages) {
+                currentPage = totalPages - 1;
+            }
+        }
+
+
+        if (choice == 27)
+        {
+            printMenu();
+            break;
+
+        }
+    } while (1);
 }
-
